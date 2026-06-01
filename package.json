@@ -1,0 +1,10 @@
+{
+  "name": "auth-profile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "pnpm --filter auth-service start:dev",
+    "profile": "pnpm --filter auth-profile start:dev",
+    "gateway": "pnpm --filter api-gateway start:dev"
+  }
+}

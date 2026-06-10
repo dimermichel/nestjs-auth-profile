@@ -1,22 +1,22 @@
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import {
   CanActivate,
   ExecutionContext,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import {
   AuthenticatedUser,
   RequestWithUser,
-} from 'src/decorators/current-user.decorator';
+} from '../decorators/current-user.decorator';
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
+export class JwtGuard implements CanActivate {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly reflector: Reflector,
+    private jwtService: JwtService,
+    private reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,36 +26,32 @@ export class JwtAuthGuard implements CanActivate {
     ]);
 
     if (isPublic) {
-      return true;
-    }
-
-    if (context.getType() !== 'http') {
-      return true; // Skip auth for non-HTTP contexts (e.g., gRPC)
+      return Promise.resolve(true);
     }
 
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const authHeader = request.headers['authorization'];
 
     if (!authHeader) {
-      throw new UnauthorizedException('No token provided');
+      throw new UnauthorizedException('Authorization header missing');
     }
 
-    const [bearer, token] = authHeader.split(' ');
+    const [type, token] = authHeader.split(' ');
 
-    if (bearer !== 'Bearer' || !token) {
-      throw new UnauthorizedException('Invalid token format');
+    if (type !== 'Bearer' || !token) {
+      throw new UnauthorizedException('Invalid authorization header format');
     }
 
     try {
       const payload = await this.jwtService.verifyAsync<AuthenticatedUser>(
         token,
         {
-          secret: process.env.JWT_SECRET!,
+          secret: process.env.JWT_SECRET,
         },
       );
-      request.user = payload;
-      return true;
-    } catch (error) {
+      request.user = payload; // Attach user info to the request object
+      return Promise.resolve(true);
+    } catch (err) {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

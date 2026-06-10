@@ -20,7 +20,9 @@ export class AuthController {
   @Post('/register')
   @Public()
   register(@Body() registerDto: RegisterDto) {
-    this.logger.log(`register called — body received: ${JSON.stringify({ email: registerDto?.email, passwordLength: registerDto?.password?.length ?? 'undefined' })}`);
+    this.logger.log(
+      `register called — body received: ${JSON.stringify({ email: registerDto?.email, passwordLength: registerDto?.password?.length ?? 'undefined' })}`,
+    );
     return this.authService.register(registerDto);
   }
 

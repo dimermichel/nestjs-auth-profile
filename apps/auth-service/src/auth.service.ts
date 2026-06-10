@@ -63,19 +63,24 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
+    this.logger.log(`login: attempting for email="${email}"`);
+
     const user = await db.query.users.findFirst({
       where: eq(users.email, email),
     });
 
     if (!user) {
+      this.logger.warn(`login: failed — no user found for email="${email}"`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      this.logger.warn(`login: failed — invalid password for email="${email}"`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    this.logger.log(`login: success — user id=${user.id}`);
     return {
       user: this.sanitizeUser(user),
       token: this.generateToken(user),
@@ -90,13 +95,17 @@ export class AuthService {
           secret: process.env.JWT_SECRET!,
         },
       );
+      this.logger.log(`validateToken: valid — userId=${payload.sub}`);
       return {
         valid: true,
         userId: payload.sub,
         email: payload.email,
         error: '',
       };
-    } catch (_error) {
+    } catch (error) {
+      this.logger.warn(
+        `validateToken: invalid or expired token — ${error instanceof Error ? error.message : error}`,
+      );
       return {
         valid: false,
         userId: null,

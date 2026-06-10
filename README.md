@@ -724,6 +724,6 @@ All fields are optional. Returns the updated profile.
 
 **⭐ If this project was useful, consider leaving a star!**
 
-_Built with dedication for learning NestJS_ 🚀
+_Built with dedication to learn NestJS_ 🚀
 
 </div>

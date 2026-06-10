@@ -2,6 +2,20 @@
 
 A production-style monorepo demonstrating how to split a backend into independent **NestJS microservices** that communicate over **gRPC**, sit behind an **API Gateway**, and share infrastructure like **Redis** and **PostgreSQL** — all wired together with **Docker Compose**.
 
+<p align="center">
+  <img src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" alt="NestJS" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm" />
+  <img src="https://img.shields.io/badge/gRPC-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="gRPC" />
+  <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Drizzle_ORM-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black" alt="Drizzle ORM" />
+  <img src="https://img.shields.io/badge/Neon-00E599?style=for-the-badge&logo=neon&logoColor=black" alt="Neon" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" alt="JWT" />
+</p>
+
 ---
 
 ## Table of Contents
@@ -32,13 +46,13 @@ Most tutorials show a single NestJS app that does everything. In the real world,
 
 This project demonstrates that split:
 
-| Responsibility | Service |
-|---|---|
-| Routing all incoming traffic | API Gateway |
-| User registration, login, token issuance | Auth Service |
-| User profile storage and retrieval | Profile Service |
-| Fast inter-service token validation | gRPC (Auth ↔ Profile) |
-| Rate limiting across restarts | Redis |
+| Responsibility                           | Service               |
+| ---------------------------------------- | --------------------- |
+| Routing all incoming traffic             | API Gateway           |
+| User registration, login, token issuance | Auth Service          |
+| User profile storage and retrieval       | Profile Service       |
+| Fast inter-service token validation      | gRPC (Auth ↔ Profile) |
+| Rate limiting across restarts            | Redis                 |
 
 ---
 
@@ -46,32 +60,32 @@ This project demonstrates that split:
 
 ```
                         ┌─────────────────────────────────────────────┐
-                        │               CLIENT (browser / app)         │
+                        │               CLIENT (browser / app)        │
                         └─────────────────────┬───────────────────────┘
                                               │ HTTP
                                               ▼
                         ┌─────────────────────────────────────────────┐
-                        │              API GATEWAY  :3000              │
-                        │                                              │
+                        │              API GATEWAY  :3000             │
+                        │                                             │
                         │  • JWT validation (local, fast)             │
                         │  • Rate limiting  (Redis-backed)            │
                         │  • HTTP proxy  →  downstream services       │
-                        └────────────┬──────────────────┬─────────────┘
+                        └────────────┬───────────────────┬────────────┘
                                      │ HTTP proxy        │ HTTP proxy
-                          ┌──────────▼──────┐   ┌───────▼──────────┐
-                          │  AUTH SERVICE   │   │ PROFILE SERVICE  │
-                          │    :3001        │   │    :3002         │
-                          │                 │   │                  │
-                          │ • Register      │   │ • GET  /profile  │
-                          │ • Login         │◄──│ • PATCH /profile │
-                          │ • ValidateToken │gRPC│                 │
-                          │   (gRPC :5001)  │   │ Circuit Breaker  │
-                          └────────┬────────┘   └───────┬──────────┘
-                                   │                    │
-                          ┌────────▼────────┐  ┌───────▼──────────┐
-                          │  Neon Postgres  │  │  Neon Postgres   │
-                          │  (users table)  │  │ (profiles table) │
-                          └─────────────────┘  └──────────────────┘
+                          ┌──────────▼──────┐    ┌───────▼──────────┐
+                          │  AUTH SERVICE   │    │ PROFILE SERVICE  │
+                          │    :3001        │    │    :3002         │
+                          │                 │    │                  │
+                          │ • Register      │    │ • GET  /profile  │
+                          │ • Login         │◄───│ • PATCH /profile │
+                          │ • ValidateToken │gRPC│                  │
+                          │   (gRPC :5001)  │    │ Circuit Breaker  │
+                          └────────┬────────┘    └───────┬──────────┘
+                                   │                     │
+                          ┌────────▼────────┐    ┌───────▼──────────┐
+                          │  Neon Postgres  │    │  Neon Postgres   │
+                          │  (users table)  │    │ (profiles table) │
+                          └─────────────────┘    └──────────────────┘
                                         ┌──────────────┐
                                         │    Redis     │
                                         │  rate limit  │
@@ -137,17 +151,17 @@ JwtGuard  →  verify the JWT signature locally (no network call needed)
 proxy()  →  forward the full request to the correct downstream service
 ```
 
-The gateway validates the token *locally* using the shared `JWT_SECRET`. This is fast — no extra network hop. It then forwards the original request (including the `Authorization` header) so downstream services can also read the user's identity.
+The gateway validates the token _locally_ using the shared `JWT_SECRET`. This is fast — no extra network hop. It then forwards the original request (including the `Authorization` header) so downstream services can also read the user's identity.
 
 **Job 2 — Route and proxy requests.**
 
-| Incoming route | Proxied to |
-|---|---|
+| Incoming route            | Proxied to                            |
+| ------------------------- | ------------------------------------- |
 | `POST /api/auth/register` | Auth Service (public — no JWT needed) |
-| `POST /api/auth/login` | Auth Service (public) |
-| `GET  /api/auth/me` | Auth Service (JWT required) |
-| `GET  /api/profile` | Profile Service (JWT required) |
-| `PATCH /api/profile` | Profile Service (JWT required) |
+| `POST /api/auth/login`    | Auth Service (public)                 |
+| `GET  /api/auth/me`       | Auth Service (JWT required)           |
+| `GET  /api/profile`       | Profile Service (JWT required)        |
+| `PATCH /api/profile`      | Profile Service (JWT required)        |
 
 ---
 
@@ -157,11 +171,11 @@ The auth service owns **everything related to users and tokens**. It exposes two
 
 **HTTP** (via the gateway proxy):
 
-| Method | Route | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Creates a new user, returns JWT |
-| POST | `/api/auth/login` | Verifies credentials, returns JWT |
-| GET | `/api/auth/me` | Returns the decoded token payload |
+| Method | Route                | Description                       |
+| ------ | -------------------- | --------------------------------- |
+| POST   | `/api/auth/register` | Creates a new user, returns JWT   |
+| POST   | `/api/auth/login`    | Verifies credentials, returns JWT |
+| GET    | `/api/auth/me`       | Returns the decoded token payload |
 
 **gRPC** (internal, called by Profile Service):
 
@@ -246,8 +260,8 @@ NestJS registers the gRPC server in `main.ts`:
 app.connectMicroservice<MicroserviceOptions>({
   transport: Transport.GRPC,
   options: {
-    package: 'auth',
-    protoPath: join(__dirname, '../../../libs/shared/src/proto/auth.proto'),
+    package: "auth",
+    protoPath: join(__dirname, "../../../libs/shared/src/proto/auth.proto"),
     url: `0.0.0.0:${process.env.GRPC_PORT ?? 5001}`,
   },
 });
@@ -281,20 +295,18 @@ private client: ClientGrpc;
 And calls it like a regular async function:
 
 ```typescript
-const result = await firstValueFrom(
-  this.authService.validateToken({ token })
-);
+const result = await firstValueFrom(this.authService.validateToken({ token }));
 ```
 
 ### Why gRPC instead of HTTP for this call?
 
-| | HTTP/REST | gRPC |
-|---|---|---|
-| Protocol | Text (JSON) | Binary (Protocol Buffers) |
-| Schema | Optional | Required (`.proto`) |
-| Type safety | Manual | Generated |
-| Performance | Good | Better (smaller payloads, HTTP/2) |
-| Best for | Public APIs | Internal service-to-service |
+|             | HTTP/REST   | gRPC                              |
+| ----------- | ----------- | --------------------------------- |
+| Protocol    | Text (JSON) | Binary (Protocol Buffers)         |
+| Schema      | Optional    | Required (`.proto`)               |
+| Type safety | Manual      | Generated                         |
+| Performance | Good        | Better (smaller payloads, HTTP/2) |
+| Best for    | Public APIs | Internal service-to-service       |
 
 For a hot path like "validate token on every request", the lower latency and binary encoding of gRPC make a real difference at scale.
 
@@ -339,6 +351,7 @@ The gateway uses `@nestjs/throttler` to limit how many requests a single IP can 
 ### Why Redis?
 
 Without Redis, rate-limit counters are stored in memory. That means:
+
 - Counters reset every time the gateway restarts
 - If you run two gateway instances, each has its own counter — a user could make 2× the allowed requests
 
@@ -405,26 +418,28 @@ Both services use [Drizzle ORM](https://orm.drizzle.team/) with [Neon](https://n
 **Auth Service schema:**
 
 ```typescript
-export const users = pgTable('users', {
-  id:        uuid('id').primaryKey().defaultRandom(),
-  email:     text('email').notNull().unique(),
-  password:  text('password').notNull(),         // bcrypt hash
-  createdAt: timestamp('created_at').defaultNow(),
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(), // bcrypt hash
+  createdAt: timestamp("created_at").defaultNow(),
 });
 ```
 
 **Profile Service schema:**
 
 ```typescript
-export const profiles = pgTable('profiles', {
-  id:        uuid('id').primaryKey().defaultRandom(),
-  userId:    text('user_id').notNull().unique(),  // references auth.users.id
-  firstName: text('first_name').notNull().default(''),
-  lastName:  text('last_name').notNull().default(''),
-  bio:       text('bio').notNull().default(''),
-  avatarUrl: text('avatar_url').notNull().default(''),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow().$onUpdateFn(() => new Date()),
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().unique(), // references auth.users.id
+  firstName: text("first_name").notNull().default(""),
+  lastName: text("last_name").notNull().default(""),
+  bio: text("bio").notNull().default(""),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
 });
 ```
 
@@ -491,7 +506,7 @@ The three NestJS services are run locally (see [Getting started](#getting-starte
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-username/auth-profile.git
+git clone https://github.com/dimermichel/nestjs-auth-profile
 cd auth-profile
 pnpm install
 ```
@@ -558,30 +573,30 @@ All traffic goes through **port 3000**.
 
 ### API Gateway (`apps/api-gateway/.env`)
 
-| Variable | Example | Description |
-|---|---|---|
-| `JWT_SECRET` | `a-long-random-string` | Must match the value in auth-service |
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
-| `AUTH_SERVICE_URL` | `http://localhost:3001` | HTTP base URL of auth-service |
-| `PROFILE_SERVICE_URL` | `http://localhost:3002` | HTTP base URL of profile-service |
-| `PORT` | `3000` | Port the gateway listens on |
+| Variable              | Example                  | Description                          |
+| --------------------- | ------------------------ | ------------------------------------ |
+| `JWT_SECRET`          | `a-long-random-string`   | Must match the value in auth-service |
+| `REDIS_URL`           | `redis://localhost:6379` | Redis connection string              |
+| `AUTH_SERVICE_URL`    | `http://localhost:3001`  | HTTP base URL of auth-service        |
+| `PROFILE_SERVICE_URL` | `http://localhost:3002`  | HTTP base URL of profile-service     |
+| `PORT`                | `3000`                   | Port the gateway listens on          |
 
 ### Auth Service (`apps/auth-service/.env`)
 
-| Variable | Example | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://...` | Neon (or any Postgres) connection string |
-| `JWT_SECRET` | `a-long-random-string` | Secret used to sign and verify JWTs |
-| `PORT` | `3001` | HTTP port |
-| `GRPC_PORT` | `5001` | gRPC port |
+| Variable       | Example                | Description                              |
+| -------------- | ---------------------- | ---------------------------------------- |
+| `DATABASE_URL` | `postgresql://...`     | Neon (or any Postgres) connection string |
+| `JWT_SECRET`   | `a-long-random-string` | Secret used to sign and verify JWTs      |
+| `PORT`         | `3001`                 | HTTP port                                |
+| `GRPC_PORT`    | `5001`                 | gRPC port                                |
 
 ### Profile Service (`apps/profile-service/.env`)
 
-| Variable | Example | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://...` | Neon (or any Postgres) connection string |
-| `AUTH_SERVICE_GRPC_URL` | `localhost:5001` | gRPC address of auth-service |
-| `PORT` | `3002` | HTTP port |
+| Variable                | Example            | Description                              |
+| ----------------------- | ------------------ | ---------------------------------------- |
+| `DATABASE_URL`          | `postgresql://...` | Neon (or any Postgres) connection string |
+| `AUTH_SERVICE_GRPC_URL` | `localhost:5001`   | gRPC address of auth-service             |
+| `PORT`                  | `3002`             | HTTP port                                |
 
 ---
 
@@ -605,7 +620,7 @@ Content-Type: application/json
 
 ```json
 {
-  "user":  { "id": "uuid", "email": "user@example.com", "createdAt": "..." },
+  "user": { "id": "uuid", "email": "user@example.com", "createdAt": "..." },
   "token": "eyJhbGci..."
 }
 ```
@@ -624,7 +639,7 @@ Content-Type: application/json
 
 ```json
 {
-  "user":  { "id": "uuid", "email": "user@example.com", "createdAt": "..." },
+  "user": { "id": "uuid", "email": "user@example.com", "createdAt": "..." },
   "token": "eyJhbGci..."
 }
 ```
@@ -637,7 +652,12 @@ Authorization: Bearer <token>
 ```
 
 ```json
-{ "sub": "uuid", "email": "user@example.com", "iat": 1234567890, "exp": 1234567890 }
+{
+  "sub": "uuid",
+  "email": "user@example.com",
+  "iat": 1234567890,
+  "exp": 1234567890
+}
 ```
 
 ### Profile
@@ -685,15 +705,25 @@ All fields are optional. Returns the updated profile.
 
 ## Tech stack
 
-| Technology | Role |
-|---|---|
-| [NestJS](https://nestjs.com/) | Framework for all three services |
+| Technology                                                           | Role                                         |
+| -------------------------------------------------------------------- | -------------------------------------------- |
+| [NestJS](https://nestjs.com/)                                        | Framework for all three services             |
 | [gRPC](https://grpc.io/) + [Protocol Buffers](https://protobuf.dev/) | Inter-service communication (Profile → Auth) |
-| [Redis](https://redis.io/) | Rate-limit counter storage |
-| [Docker Compose](https://docs.docker.com/compose/) | Local Redis setup |
-| [Drizzle ORM](https://orm.drizzle.team/) | Type-safe database queries |
-| [Neon](https://neon.tech/) | Serverless PostgreSQL |
-| [pnpm workspaces](https://pnpm.io/workspaces) | Monorepo package management |
-| [axios](https://axios-http.com/) | HTTP proxying in the gateway |
-| [bcrypt](https://github.com/kelektiv/node.bcrypt.js) | Password hashing |
-| [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) | JWT signing and verification |
+| [Redis](https://redis.io/)                                           | Rate-limit counter storage                   |
+| [Docker Compose](https://docs.docker.com/compose/)                   | Local Redis setup                            |
+| [Drizzle ORM](https://orm.drizzle.team/)                             | Type-safe database queries                   |
+| [Neon](https://neon.tech/)                                           | Serverless PostgreSQL                        |
+| [pnpm workspaces](https://pnpm.io/workspaces)                        | Monorepo package management                  |
+| [axios](https://axios-http.com/)                                     | HTTP proxying in the gateway                 |
+| [bcrypt](https://github.com/kelektiv/node.bcrypt.js)                 | Password hashing                             |
+| [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)           | JWT signing and verification                 |
+
+---
+
+<div align="center">
+
+**⭐ If this project was useful, consider leaving a star!**
+
+_Built with dedication for learning NestJS_ 🚀
+
+</div>
